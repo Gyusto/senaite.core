@@ -4,6 +4,7 @@
   <roles>
     <!-- SENAITE ROLES -->
     <role name="Analyst"/>
+    <role name="Biller"/>
     <role name="Client"/>
     <role name="LabClerk"/>
     <role name="LabManager"/>
@@ -37,6 +38,7 @@
     NOTE: We make only *add* (acquire="True") our permissions here -->
     <permission name="View" acquire="True">
       <role name="Analyst"/>
+      <role name="Biller"/>
       <role name="Client"/>
       <role name="ClientGuest"/>
       <role name="LabClerk"/>
@@ -51,6 +53,7 @@
     </permission>
     <permission name="Access contents information" acquire="True">
       <role name="Analyst"/>
+      <role name="Biller"/>
       <role name="Client"/>
       <role name="ClientGuest"/>
       <role name="LabClerk"/>
@@ -65,6 +68,7 @@
     </permission>
     <permission name="List folder contents" acquire="True">
       <role name="Analyst"/>
+      <role name="Biller"/>
       <role name="Client"/>
       <role name="ClientGuest"/>
       <role name="LabClerk"/>
@@ -78,12 +82,14 @@
       <role name="Verifier"/>
     </permission>
     <permission name="Modify portal content" acquire="True">
+      <role name="Biller"/>
       <role name="LabClerk"/>
       <role name="LabManager"/>
       <role name="Manager"/>
       <role name="Owner"/>
     </permission>
     <permission name="Add portal content" acquire="True">
+      <role name="Biller"/>
       <role name="LabClerk"/>
       <role name="LabManager"/>
       <role name="Manager"/>
@@ -98,6 +104,12 @@
       <role name="Manager"/>
     </permission>
     <!-- SENAITE PERMISSIONS -->
+    <!-- Billing -->
+    <permission name="senaite.core: Manage Billing" acquire="False">
+      <role name="Biller"/>
+      <role name="LabManager"/>
+      <role name="Manager"/>
+    </permission>
     <!-- Add Permissions -->
     <permission name="senaite.core: Add Analysis" acquire="False">
       <role name="LabClerk"/>

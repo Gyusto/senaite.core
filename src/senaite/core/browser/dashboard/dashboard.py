@@ -39,6 +39,7 @@ from Products.CMFCore.utils import getToolByName
 from Products.Five.browser.pagetemplatefile import ViewPageTemplateFile
 from senaite.core.catalog import ANALYSIS_CATALOG
 from senaite.core.catalog import SAMPLE_CATALOG
+from senaite.core.catalog import SETUP_CATALOG
 from senaite.core.catalog import WORKSHEET_CATALOG
 from senaite.core.i18n import translate
 from senaite.core.permissions import AddAnalysisRequest
@@ -376,6 +377,7 @@ class DashboardView(BrowserView):
             self._build_samples_section(),
             self._build_analyses_section(),
             self._build_worksheets_section(),
+            self._build_billing_section(),
         ]
 
     def _build_samples_section(self):
@@ -538,6 +540,62 @@ class DashboardView(BrowserView):
         return {
             "id": "worksheets",
             "title": _("Worksheets"),
+            "panels": panels,
+        }
+
+    def _build_billing_section(self):
+        catalog = getToolByName(self.context, SETUP_CATALOG)
+        query = {"portal_type": "BillingInvoice"}
+        total = self._cached_count(query, catalog.id)
+        inv_link = "%s/invoices" % self.portal_url
+
+        # "overdue" is derived (issued + past due date), not a workflow state
+        overdue_count = 0
+        invoices = api.get_portal().get("invoices")
+        if invoices is not None:
+            for inv in invoices.objectValues():
+                if getattr(inv, "portal_type", None) != "BillingInvoice":
+                    continue
+                if api.get_review_status(inv) == "issued" and inv.is_overdue():
+                    overdue_count += 1
+
+        payments = self._cached_count(
+            {"portal_type": "Payment"}, catalog.id)
+
+        panels = [
+            self._panel(
+                _("Draft"), "draft", None, catalog, query, total,
+                link=inv_link, tooltip=_("Invoices not yet issued")),
+            self._panel(
+                _("Issued"), "issued", None, catalog, query, total,
+                link=inv_link,
+                tooltip=_("Issued invoices awaiting payment")),
+            {
+                "type": "simple-panel",
+                "description": _("Overdue"),
+                "number": overdue_count,
+                "percentage": self._pct(overdue_count, total),
+                "legend": self._legend(overdue_count, total),
+                "link": inv_link,
+                "tooltip": _("Issued invoices past their due date"),
+            },
+            self._panel(
+                _("Paid"), "paid", None, catalog, query, total,
+                link=inv_link, tooltip=_("Fully paid invoices")),
+            {
+                "type": "simple-panel",
+                "description": _("Payments"),
+                "number": payments,
+                "percentage": 0.0,
+                "legend": "",
+                "link": inv_link,
+                "tooltip": _("Payments recorded against invoices"),
+            },
+        ]
+
+        return {
+            "id": "billing",
+            "title": _("Billing"),
             "panels": panels,
         }
 
@@ -856,6 +914,7 @@ SECTION_HANDLERS = {
     "analysisrequests": "_build_samples_section",
     "analyses": "_build_analyses_section",
     "worksheets": "_build_worksheets_section",
+    "billing": "_build_billing_section",
 }
 
 

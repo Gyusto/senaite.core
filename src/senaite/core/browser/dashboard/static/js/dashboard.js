@@ -39,7 +39,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Load statistics sections
   if (canViewStats) {
-    ["analysisrequests", "analyses", "worksheets"].forEach(
+    ["analysisrequests", "analyses", "worksheets", "billing"].forEach(
       function (id) {
         fetchSection(id).then(function (data) {
           renderStatisticsSection(id, data);

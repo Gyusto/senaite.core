@@ -1,0 +1,96 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser">
+
+  <!-- Force-catalog billing objects on add/modify (multi-catalog gate skips
+       freshly-created Dexterity objects) -->
+  <subscriber
+      for="senaite.core.interfaces.IBillingInvoice
+           zope.lifecycleevent.interfaces.IObjectAddedEvent"
+      handler=".subscribers.on_billing_object_event" />
+  <subscriber
+      for="senaite.core.interfaces.IBillingInvoice
+           zope.lifecycleevent.interfaces.IObjectModifiedEvent"
+      handler=".subscribers.on_billing_object_event" />
+  <subscriber
+      for="senaite.core.interfaces.IPayment
+           zope.lifecycleevent.interfaces.IObjectAddedEvent"
+      handler=".subscribers.on_billing_object_event" />
+  <subscriber
+      for="senaite.core.interfaces.IBillingLineItem
+           zope.lifecycleevent.interfaces.IObjectAddedEvent"
+      handler=".subscribers.on_billing_object_event" />
+
+  <!-- Invoices listing (default view of the Invoices container) -->
+  <browser:page
+      for="senaite.core.interfaces.IBillingInvoices"
+      name="view"
+      class=".view.InvoicesView"
+      permission="cmf.ListFolderContents"
+      layer="senaite.core.interfaces.ISenaiteCore"
+  />
+
+  <!-- Billing summary (outstanding / overdue / collected) -->
+  <browser:page
+      for="senaite.core.interfaces.IBillingInvoices"
+      name="summary"
+      class=".summary.BillingSummaryView"
+      permission="cmf.ListFolderContents"
+      layer="senaite.core.interfaces.ISenaiteCore"
+  />
+
+  <!-- Price scheme manager: CSV template download / upload -->
+  <browser:page
+      for="senaite.core.interfaces.IBillingInvoices"
+      name="pricing"
+      class=".pricelist.PricingView"
+      permission="senaite.core.permissions.ManageBilling"
+      layer="senaite.core.interfaces.ISenaiteCore"
+  />
+
+  <!-- Snapshot a sample's billable items into invoice line items -->
+  <browser:page
+      for="senaite.core.interfaces.IBillingInvoice"
+      name="bill_sample"
+      class=".generate.BillSampleView"
+      permission="cmf.ModifyPortalContent"
+      layer="senaite.core.interfaces.ISenaiteCore"
+  />
+
+  <!-- Invoice detail view (line items + workflow buttons) -->
+  <browser:page
+      for="senaite.core.interfaces.IBillingInvoice"
+      name="view"
+      class=".detail.InvoiceDetailView"
+      permission="zope2.View"
+      layer="senaite.core.interfaces.ISenaiteCore"
+  />
+
+  <!-- Printable HTML invoice -->
+  <browser:page
+      for="senaite.core.interfaces.IBillingInvoice"
+      name="print"
+      class=".print.InvoicePrintView"
+      permission="zope2.View"
+      layer="senaite.core.interfaces.ISenaiteCore"
+  />
+
+  <!-- JSON detail of a single invoice -->
+  <browser:page
+      for="senaite.core.interfaces.IBillingInvoice"
+      name="invoice_info"
+      class=".read.InvoiceInfoView"
+      permission="zope2.View"
+      layer="senaite.core.interfaces.ISenaiteCore"
+  />
+
+  <!-- JSON list of all invoices -->
+  <browser:page
+      for="senaite.core.interfaces.IBillingInvoices"
+      name="invoices_json"
+      class=".read.InvoicesListView"
+      permission="zope2.View"
+      layer="senaite.core.interfaces.ISenaiteCore"
+  />
+
+</configure>

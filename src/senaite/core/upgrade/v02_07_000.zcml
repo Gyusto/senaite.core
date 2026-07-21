@@ -3,6 +3,59 @@
     xmlns:genericsetup="http://namespaces.zope.org/genericsetup">
 
   <genericsetup:upgradeStep
+      title="SENAITE.CORE 2.7.0: Set up the Biller role"
+      description="Register the Biller role and Manage Billing permission,
+                   rebind the invoice workflow, and create a Billers group."
+      source="2759"
+      destination="2760"
+      handler=".v02_07_000.setup_biller_role"
+      profile="senaite.core:default"/>
+
+  <genericsetup:upgradeStep
+      title="SENAITE.CORE 2.7.0: Recatalog all billing objects"
+      description="Force-catalog every invoice/line-item/payment into the setup
+                   catalog so listing and summary are complete."
+      source="2758"
+      destination="2759"
+      handler=".v02_07_000.recatalog_all_billing"
+      profile="senaite.core:default"/>
+
+  <genericsetup:upgradeStep
+      title="SENAITE.CORE 2.7.0: Install the Payment content type"
+      description="Register the Payment type for recording partial payments."
+      source="2757"
+      destination="2758"
+      handler=".v02_07_000.setup_billing_payments"
+      profile="senaite.core:default"/>
+
+  <genericsetup:upgradeStep
+      title="SENAITE.CORE 2.7.0: Recatalog invoices and add sidebar nav"
+      description="Force-catalog existing invoices into the setup catalog and
+                   add the Invoices folder to the sidebar navigation."
+      source="2756"
+      destination="2757"
+      handler=".v02_07_000.recatalog_billing_and_nav"
+      profile="senaite.core:default"/>
+
+  <genericsetup:upgradeStep
+      title="SENAITE.CORE 2.7.0: Set up the Billing catalog mappings"
+      description="Register the Billing content types in the catalog mappings
+                   so they are catalogued and serialised, then reindex."
+      source="2755"
+      destination="2756"
+      handler=".v02_07_000.setup_billing_catalog"
+      profile="senaite.core:default"/>
+
+  <genericsetup:upgradeStep
+      title="SENAITE.CORE 2.7.0: Set up the Billing add-on"
+      description="Register the Invoice content types and the invoice
+                   workflow, and create the top-level Invoices container."
+      source="2754"
+      destination="2755"
+      handler=".v02_07_000.setup_billing"
+      profile="senaite.core:default"/>
+
+  <genericsetup:upgradeStep
       title="SENAITE.CORE 2.7.0: Hide unused viewlets"
       description="Hide the analytics, keywords, next/previous navigation and
                    related items viewlets, which are not used in SENAITE, by

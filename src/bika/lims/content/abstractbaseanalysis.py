@@ -565,6 +565,20 @@ BulkPrice = FixedPointField(
     )
 )
 
+# Price charged when the sample is billed under the "insurance" price group.
+# Falls back to the standard Price when left at 0.00.
+InsurancePrice = FixedPointField(
+    'InsurancePrice',
+    schemata="Description",
+    default='0.00',
+    widget=DecimalWidget(
+        label=_("Insurance price (excluding VAT)"),
+        description=_(
+            "The price charged per analysis for samples billed under the "
+            "'insurance' price group. Falls back to the standard price if 0."),
+    )
+)
+
 # If VAT is charged, a different VAT value can be entered for each
 # service.  The default value is taken from BikaSetup
 VAT = FixedPointField(
@@ -908,6 +922,7 @@ schema = BikaSchema.copy() + Schema((
     Category,
     Price,
     BulkPrice,
+    InsurancePrice,
     VAT,
     Department,
     Uncertainties,

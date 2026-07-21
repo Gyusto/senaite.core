@@ -4,6 +4,24 @@ Changelog
 2.7.0 (unreleased)
 ------------------
 
+- Add a Billing add-on: Invoice/InvoiceLineItem Dexterity types under a top-level
+  Invoices container (indexed in the setup catalog, shown in the sidebar nav), a
+  dedicated invoice workflow (draft/issued/paid/cancelled), price groups
+  (Cash/Insurance) with a per-service InsurancePrice and payment methods, a
+  server-side price snapshot from a sample's billable analyses, a senaite.app
+  listing view, an invoice detail view with workflow action buttons
+  (Issue/Pay/Cancel), a printable invoice view, JSON read views, multi-currency
+  support (USD/EUR/GBP/TZS/KES/…) with billing settings in the SENAITE Setup,
+  and a price-scheme manager to download/upload a CSV price template;
+  FX-aware multi-currency (per-invoice currency, configurable exchange rates,
+  base-to-invoice conversion frozen on the invoice); partial-payment recording
+  (Payment type, running balance, auto-settle to paid); due dates with overdue
+  detection; a billing summary (outstanding/overdue/collected by currency); a
+  PDF invoice rendered with WeasyPrint; and a Billing statistics section on the
+  SENAITE dashboard (draft/issued/overdue/paid counts and payments); emailing
+  the invoice PDF to the client via the lab MailHost; and a Biller role with a
+  "Manage Billing" permission (gating invoice issue/pay and price management)
+  plus a Billers group
 - #2993 Sync translations and add complete German, Dutch and Spanish translations
 - #2993 Make the dashboard fully translatable
 - #2992 Fix UnicodeEncodeError in Organization.getPrintAddress with non-ASCII address

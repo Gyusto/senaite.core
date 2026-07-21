@@ -281,6 +281,7 @@ def add_dexterity_portal_items(portal):
     items = [
         # ID, Title, FTI
         ("samples", "Samples", "Samples"),
+        ("invoices", "Invoices", "BillingInvoices"),
     ]
     add_dexterity_items(portal, items)
 

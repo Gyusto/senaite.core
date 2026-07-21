@@ -1,0 +1,48 @@
+<html xmlns:tal="http://xml.zope.org/namespaces/tal"
+      xmlns:metal="http://xml.zope.org/namespaces/metal"
+      metal:use-macro="context/main_template/macros/master">
+<body>
+<metal:content fill-slot="content">
+
+  <h1 class="documentFirstHeading">Billing summary</h1>
+
+  <p tal:condition="not:view/rows"><em>No invoices yet.</em></p>
+
+  <div class="row" tal:repeat="row view/rows">
+    <div class="col-12">
+      <h3 tal:content="row/currency">USD</h3>
+      <div class="card-deck mb-4">
+        <div class="card text-center">
+          <div class="card-body">
+            <div class="h4 mb-0" tal:content="string:${row/currency} ${row/outstanding}">0.00</div>
+            <small class="text-muted">Outstanding
+              (<span tal:content="row/count">0</span> invoices)</small>
+          </div>
+        </div>
+        <div class="card text-center border-danger"
+             tal:attributes="class python: 'card text-center border-danger' if row['overdue_count'] else 'card text-center'">
+          <div class="card-body">
+            <div class="h4 mb-0"
+                 tal:attributes="class python: 'h4 mb-0 text-danger' if row['overdue_count'] else 'h4 mb-0'"
+                 tal:content="string:${row/currency} ${row/overdue}">0.00</div>
+            <small class="text-muted">Overdue
+              (<span tal:content="row/overdue_count">0</span>)</small>
+          </div>
+        </div>
+        <div class="card text-center">
+          <div class="card-body">
+            <div class="h4 mb-0 text-success"
+                 tal:content="string:${row/currency} ${row/collected}">0.00</div>
+            <small class="text-muted">Collected (paid)</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <a class="btn btn-sm btn-outline-primary"
+     tal:attributes="href string:${context/absolute_url}">&#8592; Back to invoices</a>
+
+</metal:content>
+</body>
+</html>

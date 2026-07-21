@@ -634,3 +634,23 @@ class IMultiUploadFileRemover(Interface):
 class ILaboratory(Interface):
     """Marker interface for lab info
     """
+
+
+class IBillingInvoices(Interface):
+    """Marker interface for the Invoices container
+    """
+
+
+class IBillingInvoice(Interface):
+    """Marker interface for an Invoice
+    """
+
+
+class IBillingLineItem(Interface):
+    """Marker interface for an Invoice line item
+    """
+
+
+class IPayment(Interface):
+    """Marker interface for a Payment against an Invoice
+    """

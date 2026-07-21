@@ -44,7 +44,7 @@
 
     <!-- Statistics Sections (async, permission-gated) -->
     <tal:statistics condition="python:view.can_view_statistics()">
-      <div tal:repeat="section_id python:['analysisrequests', 'analyses', 'worksheets']">
+      <div tal:repeat="section_id python:['analysisrequests', 'analyses', 'worksheets', 'billing']">
         <div tal:attributes="id string:dashboard-section-${section_id}"
              class="dashboard-section">
           <div class="text-muted py-3">

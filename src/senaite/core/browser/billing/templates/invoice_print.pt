@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html xmlns:tal="http://xml.zope.org/namespaces/tal"
+      tal:define="inv view/invoice; client view/client">
+<head>
+  <meta charset="utf-8"/>
+  <title tal:content="string:Invoice ${inv/number}">Invoice</title>
+  <style type="text/css">
+    body { font-family: Arial, sans-serif; color: #222; margin: 2em; font-size: 13px; }
+    .header { display: flex; justify-content: space-between; border-bottom: 2px solid #333; padding-bottom: 1em; }
+    .header h1 { margin: 0; font-size: 24px; }
+    .meta { margin-top: 1.5em; display: flex; justify-content: space-between; }
+    table { width: 100%; border-collapse: collapse; margin-top: 1.5em; }
+    th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid #ddd; }
+    th { background: #f3f3f3; }
+    td.num, th.num { text-align: right; }
+    .totals { margin-top: 1em; width: 300px; margin-left: auto; }
+    .totals td { border: none; padding: 4px 6px; }
+    .totals .grand { font-weight: bold; border-top: 2px solid #333; font-size: 15px; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 3px; background: #eee; text-transform: capitalize; }
+    .state-paid { background: #d4edda; }
+    .state-issued { background: #fff3cd; }
+    @media print { .noprint { display: none; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1 tal:content="view/lab_title">Laboratory</h1>
+      <div>Invoice</div>
+    </div>
+    <div style="text-align:right">
+      <div style="font-size:18px; font-weight:bold" tal:content="inv/number">INV-0001</div>
+      <div>Date: <span tal:content="inv/invoice_date">-</span></div>
+      <div>Status: <span class="badge" tal:attributes="class string:badge state-${inv/review_state}"
+                        tal:content="inv/review_state">draft</span></div>
+    </div>
+  </div>
+
+  <div class="meta">
+    <div>
+      <strong>Bill to:</strong><br/>
+      <span tal:content="inv/client_title">Client</span>
+    </div>
+    <div>
+      <strong>Price group:</strong> <span class="badge" tal:content="inv/price_group">cash</span><br/>
+      <strong>Payment method:</strong> <span tal:content="inv/payment_method">cash</span>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Description</th><th>Sample</th>
+        <th class="num">Qty</th><th class="num">Unit price</th>
+        <th class="num">VAT %</th><th class="num">Line total</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr tal:repeat="li inv/line_items">
+        <td tal:content="li/description">pH</td>
+        <td tal:content="li/sample_id">DW-0001</td>
+        <td class="num" tal:content="li/quantity">1</td>
+        <td class="num" tal:content="li/unit_price">0.00</td>
+        <td class="num" tal:content="li/vat_percentage">0.00</td>
+        <td class="num" tal:content="li/line_total">0.00</td>
+      </tr>
+      <tr tal:condition="not:inv/line_items">
+        <td colspan="6"><em>No line items</em></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <table class="totals">
+    <tr><td>Subtotal</td><td class="num" tal:content="string:${inv/currency} ${inv/subtotal}">0.00</td></tr>
+    <tr><td>Discount</td><td class="num" tal:content="string:${inv/currency} ${inv/discount}">0.00</td></tr>
+    <tr><td>VAT</td><td class="num" tal:content="string:${inv/currency} ${inv/vat}">0.00</td></tr>
+    <tr class="grand"><td>Total</td><td class="num" tal:content="string:${inv/currency} ${inv/total}">0.00</td></tr>
+    <tr><td>Amount paid</td><td class="num" tal:content="string:${inv/currency} ${inv/amount_paid}">0.00</td></tr>
+    <tr><td>Balance due</td><td class="num" tal:content="string:${inv/currency} ${inv/balance_due}">0.00</td></tr>
+  </table>
+
+  <p class="noprint" style="margin-top:2em">
+    <button onclick="window.print()">Print</button>
+  </p>
+</body>
+</html>

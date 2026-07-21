@@ -1,0 +1,109 @@
+<html xmlns:tal="http://xml.zope.org/namespaces/tal"
+      xmlns:metal="http://xml.zope.org/namespaces/metal"
+      metal:use-macro="context/main_template/macros/master">
+<body>
+<metal:content fill-slot="content">
+
+  <h1 class="documentFirstHeading">Price schemes</h1>
+
+  <div class="alert alert-success" tal:condition="view/message"
+       tal:content="view/message">message</div>
+
+  <h2>Schemes</h2>
+  <table class="table table-sm w-auto">
+    <thead><tr><th>Scheme</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr tal:repeat="s view/schemes">
+        <td><span class="badge badge-info text-capitalize"
+                  tal:content="s/title">Cash</span></td>
+        <td tal:content="s/description">-</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Currency &amp; exchange rates</h2>
+  <p>Base (accounting) currency:
+     <span class="badge badge-dark" tal:content="view/base_currency">USD</span></p>
+  <form method="post"
+        tal:attributes="action string:${context/absolute_url}/pricing">
+    <div class="form-group">
+      <label>Base currency</label>
+      <select name="base_currency" class="form-control form-control-sm w-auto">
+        <option tal:repeat="c view/currencies"
+                tal:attributes="value c;
+                                selected python: 'selected' if c==view.base_currency() else None"
+                tal:content="c">USD</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Exchange rates <small class="text-muted">(one per line as
+        <code>CODE=RATE</code>; RATE = units of CODE per 1 base currency,
+        e.g. <code>TZS=2600</code>)</small></label>
+      <textarea name="exchange_rates" rows="4"
+                class="form-control form-control-sm"
+                tal:content="view/exchange_rates_text"></textarea>
+    </div>
+    <button type="submit" name="save_rates" value="1"
+            class="btn btn-sm btn-primary">Save currency settings</button>
+  </form>
+
+  <table class="table table-sm w-auto mt-2" tal:condition="view/exchange_rates">
+    <thead><tr><th>Currency</th><th class="text-right">Rate (per 1
+      <span tal:content="view/base_currency">base</span>)</th></tr></thead>
+    <tbody>
+      <tr tal:repeat="r view/exchange_rates">
+        <td tal:content="r/code">TZS</td>
+        <td class="text-right" tal:content="r/rate">2600</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Download / upload price template</h2>
+  <p>
+    <a class="btn btn-sm btn-outline-primary"
+       tal:attributes="href string:${context/absolute_url}/pricing?download=1">
+       &#8681; Download price template (CSV)</a>
+  </p>
+  <form method="post" enctype="multipart/form-data"
+        tal:attributes="action string:${context/absolute_url}/pricing">
+    <div class="form-row align-items-center">
+      <div class="col-auto">
+        <input type="file" name="csvfile" accept=".csv" class="form-control-file"/>
+      </div>
+      <div class="col-auto">
+        <button type="submit" class="btn btn-sm btn-primary">Upload prices</button>
+      </div>
+    </div>
+    <small class="text-muted">
+      Columns: keyword, title, cash_price, insurance_price, vat.
+      Rows are matched to services by <em>keyword</em>.
+    </small>
+  </form>
+
+  <h2 class="mt-4">Current service prices</h2>
+  <table class="table table-sm table-striped">
+    <thead>
+      <tr>
+        <th>Keyword</th><th>Service</th>
+        <th class="text-right">Cash price</th>
+        <th class="text-right">Insurance price</th>
+        <th class="text-right">VAT %</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr tal:repeat="row view/services">
+        <td tal:content="row/keyword">pH</td>
+        <td tal:content="row/title">pH</td>
+        <td class="text-right" tal:content="row/cash_price">0.00</td>
+        <td class="text-right" tal:content="row/insurance_price">0.00</td>
+        <td class="text-right" tal:content="row/vat">0.00</td>
+      </tr>
+      <tr tal:condition="not:view/services">
+        <td colspan="5"><em>No analysis services defined.</em></td>
+      </tr>
+    </tbody>
+  </table>
+
+</metal:content>
+</body>
+</html>

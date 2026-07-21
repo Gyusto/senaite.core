@@ -922,7 +922,8 @@ class ISetupSchema(model.Schema):
             vocabulary="senaite.core.vocabularies.top_level_folders"
         ),
         required=False,
-        default=("clients", "samples", "methods", "batches", "worksheets"),
+        default=("clients", "samples", "methods", "batches", "worksheets",
+                 "invoices"),
     )
 
     sidebar_navigation_depth = schema.Int(
@@ -958,6 +959,37 @@ class ISetupSchema(model.Schema):
         ),
         required=False,
         default=("AnalysisRequest", "Attachment", ),
+    )
+
+    # Billing: reuses the existing Accounting `currency` and `vat` settings;
+    # the payment terms and exchange rates are new.
+    exchange_rates = schema.Text(
+        title=_(
+            u"title_senaitesetup_exchange_rates",
+            default=u"Exchange rates"
+        ),
+        description=_(
+            u"description_senaitesetup_exchange_rates",
+            default=u"One rate per line as CODE=RATE, relative to the base "
+                    u"currency selected above. RATE is how many units of CODE "
+                    u"equal one unit of the base currency, e.g. with base USD: "
+                    u"TZS=2600 means 1 USD = 2600 TZS. Invoices in the base "
+                    u"currency, or in a currency without a rate, use 1.0."
+        ),
+        required=False,
+    )
+
+    payment_terms_days = schema.Int(
+        title=_(
+            u"title_senaitesetup_payment_terms_days",
+            default=u"Payment terms (days)"
+        ),
+        description=_(
+            u"description_senaitesetup_payment_terms_days",
+            default=u"Number of days after the invoice date when payment is due."
+        ),
+        required=False,
+        default=30,
     )
 
     # Sampling
@@ -1300,6 +1332,8 @@ class ISetupSchema(model.Schema):
             "default_country",
             "member_discount",
             "vat",
+            "exchange_rates",
+            "payment_terms_days",
         ]
     )
 

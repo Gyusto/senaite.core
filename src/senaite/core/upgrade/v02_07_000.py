@@ -61,6 +61,7 @@ from senaite.core.schema.addressfield import NAIVE_ADDRESS
 from senaite.core.schema.addressfield import PHYSICAL_ADDRESS
 from senaite.core.schema.addressfield import POSTAL_ADDRESS
 from senaite.core.schema.uidreferencefield import get_backref_storage
+from Products.CMFCore.utils import getToolByName
 from senaite.core.setuphandlers import _run_import_step
 from senaite.core.setuphandlers import add_catalog_column
 from senaite.core.setuphandlers import add_catalog_index
@@ -2858,3 +2859,154 @@ def remove_client_sharing_alias(tool):
     del aliases["sharing"]
     fti.setMethodAliases(aliases)
     logger.info("Removed 'sharing' method alias from Client FTI")
+
+
+@upgradestep(product, version)
+def setup_billing(tool):
+    """Install the Billing add-on: register the Invoice content types and the
+    invoice workflow, and create the top-level Invoices container.
+    """
+    logger.info("Setup Billing ...")
+
+    # register the new content types and (re)bind the invoice workflow
+    tool.runImportStepFromProfile(profile, "typeinfo")
+    tool.runImportStepFromProfile(profile, "workflow")
+
+    # create the top-level Invoices container
+    portal = api.get_portal()
+    if not portal.get("invoices"):
+        items = [("invoices", "Invoices", "BillingInvoices")]
+        add_dexterity_items(portal, items)
+        logger.info("Invoices container created")
+    else:
+        logger.info("Invoices container already exists [SKIP]")
+
+    logger.info("Setup Billing [DONE]")
+
+
+@upgradestep(product, version)
+def setup_billing_catalog(tool):
+    """Register the Billing content types in the catalog mappings so they are
+    properly catalogued (and serialised by the JSON API), then reindex the
+    existing invoices.
+    """
+    from senaite.core.setuphandlers import setup_catalog_mappings
+    logger.info("Setup Billing catalog mappings ...")
+
+    portal = api.get_portal()
+    setup_catalog_mappings(portal)
+
+    invoices = portal.get("invoices")
+    if invoices is not None:
+        for invoice in invoices.objectValues():
+            invoice.reindexObject()
+            for line in invoice.objectValues():
+                line.reindexObject()
+
+    logger.info("Setup Billing catalog mappings [DONE]")
+
+
+@upgradestep(product, version)
+def recatalog_billing_and_nav(tool):
+    """Force-catalog the existing invoices into the setup catalog (bypassing
+    the multi-catalog behaviour gate) and add the Invoices folder to the
+    sidebar navigation.
+    """
+    from senaite.core.setuphandlers import setup_catalog_mappings
+    logger.info("Recatalog billing objects + sidebar nav ...")
+
+    portal = api.get_portal()
+    setup_catalog_mappings(portal)
+
+    # (1) force-catalog invoices and their line items
+    invoices = portal.get("invoices")
+    count = 0
+    if invoices is not None:
+        objects = []
+        for invoice in invoices.objectValues():
+            if getattr(invoice, "portal_type", None) != "BillingInvoice":
+                continue
+            objects.append(invoice)
+            objects.extend(invoice.objectValues())
+        for obj in objects:
+            for cat in api.get_catalogs_for(obj):
+                cat.catalog_object(obj, idxs=None, update_metadata=1)
+            count += 1
+    logger.info("Recataloged %s billing objects" % count)
+
+    # (2) surface the Invoices folder in the sidebar navigation
+    setup = api.get_senaite_setup()
+    folders = tuple(setup.getSidebarFolders() or ())
+    if "invoices" not in folders:
+        setup.setSidebarFolders(folders + ("invoices",))
+        logger.info("Added 'invoices' to sidebar navigation")
+
+    logger.info("Recatalog billing objects + sidebar nav [DONE]")
+
+
+@upgradestep(product, version)
+def setup_billing_payments(tool):
+    """Install the Payment content type used to record (partial) payments
+    against invoices, and wire its catalog mapping.
+    """
+    from senaite.core.setuphandlers import setup_catalog_mappings
+    logger.info("Setup Billing payments ...")
+    tool.runImportStepFromProfile(profile, "typeinfo")
+    tool.runImportStepFromProfile(profile, "workflow")
+    setup_catalog_mappings(api.get_portal())
+    logger.info("Setup Billing payments [DONE]")
+
+
+@upgradestep(product, version)
+def recatalog_all_billing(tool):
+    """Force-catalog every existing invoice, line item and payment into the
+    setup catalog (the multi-catalog gate had skipped objects created via the
+    API), so the listing and summary see them all.
+    """
+    from senaite.core.content.billing import recatalog
+    logger.info("Recatalog all billing objects ...")
+    portal = api.get_portal()
+    invoices = portal.get("invoices")
+    count = 0
+    if invoices is not None:
+        for invoice in invoices.objectValues():
+            if getattr(invoice, "portal_type", None) != "BillingInvoice":
+                continue
+            recatalog(invoice)
+            count += 1
+            for child in invoice.objectValues():
+                recatalog(child)
+    logger.info("Recatalog all billing objects: %s invoices [DONE]" % count)
+
+
+@upgradestep(product, version)
+def setup_biller_role(tool):
+    """Register the Biller role + Manage Billing permission, rebind the invoice
+    workflow permissions, and create a Billers group.
+    """
+    logger.info("Setup Biller role ...")
+    tool.runImportStepFromProfile(profile, "rolemap")
+    tool.runImportStepFromProfile(profile, "workflow")
+
+    # create a 'Billers' group with the Biller role
+    portal = api.get_portal()
+    groups = api.get_tool("portal_groups")
+    if "Billers" not in groups.getGroupIds():
+        groups.addGroup("Billers", title="Billers", roles=["Biller"])
+        logger.info("Created 'Billers' group")
+
+    # recompute security on existing invoices for the new workflow permissions
+    invoices = portal.get("invoices")
+    if invoices is not None:
+        wtool = portal.portal_workflow
+        wf = wtool.getWorkflowById("senaite_billing_workflow")
+        for invoice in invoices.objectValues():
+            if getattr(invoice, "portal_type", None) != "BillingInvoice":
+                continue
+            try:
+                wf.updateRoleMappingsFor(invoice)
+                invoice.reindexObjectSecurity()
+            except Exception:  # noqa - best effort
+                continue
+
+    logger.info("Setup Biller role [DONE]")

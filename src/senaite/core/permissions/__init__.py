@@ -192,3 +192,6 @@ ViewDashboard = "senaite.core: View Dashboard"
 ViewNavigation = "senaite.core: View Navigation"
 ViewRetractedAnalyses = "senaite.core: View Retracted Analyses"
 ViewLogTab = "senaite.core: View Log Tab"
+
+# Billing
+ManageBilling = "senaite.core: Manage Billing"

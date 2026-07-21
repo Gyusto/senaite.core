@@ -1,0 +1,163 @@
+<html xmlns:tal="http://xml.zope.org/namespaces/tal"
+      xmlns:metal="http://xml.zope.org/namespaces/metal"
+      metal:use-macro="context/main_template/macros/master">
+<body>
+<metal:content fill-slot="content">
+  <tal:defs tal:define="inv view/invoice; client view/client;
+                        transitions view/transitions">
+
+  <h1 class="documentFirstHeading">
+    Invoice <span tal:content="inv/number">INV-0001</span>
+    <span class="badge badge-secondary text-uppercase"
+          tal:attributes="class python:'badge text-uppercase badge-' + ('success' if inv['review_state']=='paid' else 'warning' if inv['review_state']=='issued' else 'secondary')"
+          tal:content="inv/review_state">draft</span>
+    <span class="badge badge-danger" tal:condition="inv/is_overdue">Overdue</span>
+  </h1>
+
+  <div class="alert alert-info" tal:condition="view/message"
+       tal:content="view/message">message</div>
+
+  <!-- Workflow action buttons -->
+  <div class="mb-3">
+    <form method="post" style="display:inline"
+          tal:attributes="action string:${context/absolute_url}/view"
+          tal:repeat="t transitions">
+      <input type="hidden" name="_authenticator"
+             tal:attributes="value view/authenticator"/>
+      <input type="hidden" name="workflow_action"
+             tal:attributes="value t/id"/>
+      <button type="submit" class="btn btn-sm mr-1"
+              tal:attributes="class python:'btn btn-sm mr-1 ' + ('btn-success' if t['id']=='pay' else 'btn-primary' if t['id']=='issue' else 'btn-outline-secondary')"
+              tal:content="t/title">Action</button>
+    </form>
+    <a class="btn btn-sm btn-outline-dark"
+       tal:attributes="href string:${context/absolute_url}/print"
+       target="_blank">Print</a>
+    <a class="btn btn-sm btn-outline-danger"
+       tal:attributes="href string:${context/absolute_url}/print?format=pdf"
+       target="_blank">Download PDF</a>
+  </div>
+
+  <!-- Email the invoice PDF to the client -->
+  <form method="post" class="form-inline mb-3"
+        tal:attributes="action string:${context/absolute_url}/view">
+    <input type="hidden" name="_authenticator"
+           tal:attributes="value view/authenticator"/>
+    <input type="hidden" name="email_invoice" value="1"/>
+    <input type="email" name="recipient"
+           class="form-control form-control-sm mr-1" style="min-width:16rem"
+           placeholder="client@example.com"
+           tal:attributes="value view/default_recipient"/>
+    <button type="submit" class="btn btn-sm btn-info">&#9993; Email PDF to client</button>
+  </form>
+
+  <div class="row">
+    <div class="col-sm-6">
+      <table class="table table-sm">
+        <tr><th>Client</th>
+            <td tal:content="python: client.Title() if client else inv['client_uid']">-</td></tr>
+        <tr><th>Invoice date</th><td tal:content="inv/invoice_date">-</td></tr>
+        <tr><th>Due date</th><td tal:content="inv/due_date">-</td></tr>
+        <tr><th>Price group</th>
+            <td><span class="badge badge-info text-capitalize"
+                      tal:content="inv/price_group">cash</span></td></tr>
+        <tr><th>Payment method</th>
+            <td class="text-capitalize" tal:content="inv/payment_method">cash</td></tr>
+        <tr tal:condition="python: inv.get('exchange_rate') not in (None, '', '1', '1.0')">
+            <th>Exchange rate</th>
+            <td tal:content="string:1 base = ${inv/exchange_rate} ${inv/currency}">-</td></tr>
+      </table>
+    </div>
+    <div class="col-sm-6">
+      <table class="table table-sm">
+        <tr><th>Subtotal</th><td class="text-right"
+            tal:content="string:${inv/currency} ${inv/subtotal}">0.00</td></tr>
+        <tr><th>Discount</th><td class="text-right"
+            tal:content="string:${inv/currency} ${inv/discount}">0.00</td></tr>
+        <tr><th>VAT</th><td class="text-right"
+            tal:content="string:${inv/currency} ${inv/vat}">0.00</td></tr>
+        <tr class="font-weight-bold"><th>Total</th><td class="text-right"
+            tal:content="string:${inv/currency} ${inv/total}">0.00</td></tr>
+        <tr><th>Amount paid</th><td class="text-right"
+            tal:content="string:${inv/currency} ${inv/amount_paid}">0.00</td></tr>
+        <tr><th>Balance due</th><td class="text-right"
+            tal:content="string:${inv/currency} ${inv/balance_due}">0.00</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <h2>Line items</h2>
+  <table class="table table-sm table-striped">
+    <thead>
+      <tr>
+        <th>Description</th><th>Sample</th>
+        <th class="text-right">Qty</th><th class="text-right">Unit price</th>
+        <th class="text-right">VAT %</th><th class="text-right">Line total</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr tal:repeat="li inv/line_items">
+        <td tal:content="li/description">pH</td>
+        <td tal:content="li/sample_id">DW-0001</td>
+        <td class="text-right" tal:content="li/quantity">1</td>
+        <td class="text-right" tal:content="li/unit_price">0.00</td>
+        <td class="text-right" tal:content="li/vat_percentage">0.00</td>
+        <td class="text-right" tal:content="li/line_total">0.00</td>
+      </tr>
+      <tr tal:condition="not:inv/line_items">
+        <td colspan="6"><em>No line items yet.</em></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Payments</h2>
+  <table class="table table-sm">
+    <thead>
+      <tr><th>Date</th><th>Reference</th><th>Method</th>
+          <th class="text-right">Amount</th></tr>
+    </thead>
+    <tbody>
+      <tr tal:repeat="p inv/payments">
+        <td tal:content="p/payment_date">-</td>
+        <td tal:content="p/reference">-</td>
+        <td class="text-capitalize" tal:content="p/method">cash</td>
+        <td class="text-right"
+            tal:content="string:${inv/currency} ${p/amount}">0.00</td>
+      </tr>
+      <tr tal:condition="not:inv/payments">
+        <td colspan="4"><em>No payments recorded.</em></td>
+      </tr>
+      <tr class="font-weight-bold">
+        <td colspan="3" class="text-right">Balance due</td>
+        <td class="text-right"
+            tal:content="string:${inv/currency} ${inv/balance_due}">0.00</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Record a (partial) payment -->
+  <form method="post" class="form-inline"
+        tal:condition="view/can_record_payment"
+        tal:attributes="action string:${context/absolute_url}/view">
+    <input type="hidden" name="_authenticator"
+           tal:attributes="value view/authenticator"/>
+    <input type="hidden" name="record_payment" value="1"/>
+    <input type="number" step="0.01" name="amount" class="form-control form-control-sm mr-1"
+           tal:attributes="placeholder string:Amount (${inv/currency})" required="required"/>
+    <select name="method" class="form-control form-control-sm mr-1">
+      <option tal:repeat="m view/payment_methods"
+              tal:attributes="value m" tal:content="m">cash</option>
+    </select>
+    <input type="text" name="reference" placeholder="Reference"
+           class="form-control form-control-sm mr-1"/>
+    <input type="date" name="payment_date" class="form-control form-control-sm mr-1"/>
+    <button type="submit" class="btn btn-sm btn-success">Record payment</button>
+  </form>
+  <p tal:condition="not:view/can_record_payment" class="text-muted">
+    <em>Payments can be recorded once the invoice is <strong>issued</strong>.</em>
+  </p>
+
+  </tal:defs>
+</metal:content>
+</body>
+</html>

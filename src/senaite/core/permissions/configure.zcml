@@ -110,4 +110,7 @@
   <permission id="senaite.core.permissions.ViewRetractedAnalyses" title="senaite.core: View Retracted Analyses"/>
   <permission id="senaite.core.permissions.ViewLogTab" title="senaite.core: View Log Tab"/>
 
+  <!-- Billing -->
+  <permission id="senaite.core.permissions.ManageBilling" title="senaite.core: Manage Billing"/>
+
 </configure>

@@ -132,4 +132,10 @@
   <object name="Worksheet" meta_type="Dexterity FTI" />
   <object name="Worksheets" meta_type="Dexterity FTI" />
 
+  <!-- Billing -->
+  <object name="BillingInvoices" meta_type="Dexterity FTI" />
+  <object name="BillingInvoice" meta_type="Dexterity FTI" />
+  <object name="BillingLineItem" meta_type="Dexterity FTI" />
+  <object name="Payment" meta_type="Dexterity FTI" />
+
 </object>
