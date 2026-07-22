@@ -21,7 +21,6 @@
 import json
 
 from bika.lims import api
-from bika.lims.interfaces import IAnalysisProfile
 from Products.Five.browser import BrowserView
 from senaite.core.content.billing import get_exchange_rate
 from senaite.core.content.billing import recatalog
@@ -61,7 +60,10 @@ class BillSampleView(BrowserView):
             self.context, u"{}".format(rate))
         created = []
         for obj in sample.getBillableItems():
-            if IAnalysisProfile.providedBy(obj):
+            # profiles carry their own fixed price/VAT; analyses price via the
+            # service. Detect by portal_type so it works for both the Dexterity
+            # (senaite.core) and legacy (bika.lims) AnalysisProfile types.
+            if api.get_portal_type(obj) == "AnalysisProfile":
                 title = obj.Title()
                 base_price = to_decimal(obj.getAnalysisProfilePrice())
                 vat_pct = to_decimal(obj.getAnalysisProfileVAT())
