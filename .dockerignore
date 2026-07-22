@@ -1,0 +1,13 @@
+# Keep the build context small: we only COPY src/bika and src/senaite.
+.git
+node_modules
+**/node_modules
+webpack
+*.md
+docs
+tests
+bootstrap
+*.log
+.tox
+.idea
+.vscode

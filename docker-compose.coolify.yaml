@@ -1,0 +1,32 @@
+# Coolify deployment for SENAITE + Billing add-on.
+#
+# In Coolify: create a "Docker Compose" resource pointing at this repo/branch and this
+# file. Coolify injects Traefik labels from SERVICE_FQDN_* and terminates TLS via
+# Let's Encrypt. The site is created on first boot (SITE/PROFILES/PASSWORD) — the first
+# start takes a few minutes while buildout runs and the SENAITE site is provisioned, so
+# the healthcheck has a long start period.
+services:
+  senaite:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      # Auto-create the SENAITE site on first boot.
+      - SITE=senaite
+      - PROFILES=senaite.lims:default
+      # Admin password — override in Coolify's env settings.
+      - PASSWORD=${SENAITE_PASSWORD:-admin}
+      # Coolify: publish on this domain, proxy to container port 8080.
+      - SERVICE_FQDN_SENAITE_8080=https://senaite.georgeyusto.info
+    volumes:
+      - senaite-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/senaite/login_form >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 20
+      start_period: 600s
+
+volumes:
+  senaite-data:
