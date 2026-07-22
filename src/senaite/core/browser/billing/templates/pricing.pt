@@ -62,7 +62,7 @@
   <p>
     <a class="btn btn-sm btn-outline-primary"
        tal:attributes="href string:${context/absolute_url}/pricing?download=1">
-       &#8681; Download price template (CSV)</a>
+       &#8681; Download available items (CSV)</a>
   </p>
   <form method="post" enctype="multipart/form-data"
         tal:attributes="action string:${context/absolute_url}/pricing">
@@ -75,31 +75,36 @@
       </div>
     </div>
     <small class="text-muted">
-      Columns: keyword, title, cash_price, insurance_price, vat.
-      Rows are matched to services by <em>keyword</em>.
+      Columns: item_type, uid, keyword, title, cash_price, insurance_price, vat.
+      Rows are matched by <em>uid</em> (services also by <em>keyword</em>).
+      Insurance price applies to services only; profiles use a single price.
     </small>
   </form>
 
-  <h2 class="mt-4">Current service prices</h2>
+  <h2 class="mt-4">Available items &amp; prices</h2>
   <table class="table table-sm table-striped">
     <thead>
       <tr>
-        <th>Keyword</th><th>Service</th>
+        <th>Type</th><th>Keyword</th><th>Item</th>
         <th class="text-right">Cash price</th>
         <th class="text-right">Insurance price</th>
         <th class="text-right">VAT %</th>
       </tr>
     </thead>
     <tbody>
-      <tr tal:repeat="row view/services">
+      <tr tal:repeat="row view/items">
+        <td><span class="badge badge-light text-capitalize"
+                  tal:content="row/item_type">service</span></td>
         <td tal:content="row/keyword">pH</td>
         <td tal:content="row/title">pH</td>
         <td class="text-right" tal:content="row/cash_price">0.00</td>
-        <td class="text-right" tal:content="row/insurance_price">0.00</td>
+        <td class="text-right"
+            tal:content="python: row['insurance_price'] or '-'">0.00</td>
         <td class="text-right" tal:content="row/vat">0.00</td>
       </tr>
-      <tr tal:condition="not:view/services">
-        <td colspan="5"><em>No analysis services defined.</em></td>
+      <tr tal:condition="not:view/items">
+        <td colspan="6"><em>No billable items (analysis services or
+          profiles) defined.</em></td>
       </tr>
     </tbody>
   </table>

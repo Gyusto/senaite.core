@@ -28,7 +28,18 @@ from senaite.core.catalog import SETUP_CATALOG
 from senaite.core.content.billing import get_base_currency
 from senaite.core.content.billing import get_exchange_rates
 
-HEADER = ["keyword", "title", "cash_price", "insurance_price", "vat"]
+HEADER = ["item_type", "uid", "keyword", "title",
+          "cash_price", "insurance_price", "vat"]
+
+
+def _fmt(value):
+    """Format a price/VAT value as a plain 2-decimal string."""
+    if value in (None, ""):
+        return u""
+    try:
+        return u"{:.2f}".format(float(value))
+    except (TypeError, ValueError):
+        return api.safe_unicode(value)
 
 # The available price schemes (price groups)
 SCHEMES = [
@@ -95,17 +106,44 @@ class PricingView(BrowserView):
         query = {"portal_type": "AnalysisService", "sort_on": "sortable_title"}
         return [api.get_object(b) for b in api.search(query, SETUP_CATALOG)]
 
-    def services(self):
+    def get_profiles(self):
+        query = {"portal_type": "AnalysisProfile", "sort_on": "sortable_title"}
+        return [api.get_object(b) for b in api.search(query, SETUP_CATALOG)]
+
+    def items(self):
+        """All available billable items (services + profiles) with prices.
+
+        These are exactly the item types that can end up as invoice line items
+        (see ``getBillableItems``), so the price template covers everything that
+        can be billed - not just analysis services.
+        """
         rows = []
         for svc in self.get_services():
             rows.append({
+                "item_type": "service",
+                "uid": api.get_uid(svc),
                 "keyword": svc.getKeyword(),
                 "title": svc.Title(),
-                "cash_price": svc.getPrice(),
-                "insurance_price": svc.getInsurancePrice(),
-                "vat": svc.getVAT(),
+                "cash_price": _fmt(svc.getPrice()),
+                "insurance_price": _fmt(svc.getInsurancePrice()),
+                "vat": _fmt(svc.getVAT()),
+            })
+        for profile in self.get_profiles():
+            rows.append({
+                "item_type": "profile",
+                "uid": api.get_uid(profile),
+                "keyword": profile.getProfileKey() or u"",
+                "title": profile.Title(),
+                "cash_price": _fmt(profile.getAnalysisProfilePrice()),
+                # profiles have a single price, no insurance variant
+                "insurance_price": u"",
+                "vat": _fmt(profile.getAnalysisProfileVAT()),
             })
         return rows
+
+    # BBB: kept for callers that only want services
+    def services(self):
+        return [r for r in self.items() if r["item_type"] == "service"]
 
     # -- CSV download -----------------------------------------------------
 
@@ -113,10 +151,8 @@ class PricingView(BrowserView):
         out = BytesIO()
         writer = csv.writer(out)
         writer.writerow(HEADER)
-        for row in self.services():
-            writer.writerow([
-                row["keyword"], row["title"], row["cash_price"],
-                row["insurance_price"], row["vat"]])
+        for row in self.items():
+            writer.writerow([row[col] for col in HEADER])
         data = out.getvalue()
         self.request.response.setHeader("Content-Type", "text/csv")
         self.request.response.setHeader(
@@ -133,30 +169,52 @@ class PricingView(BrowserView):
         lines = raw.splitlines()
         reader = csv.DictReader(lines)
 
-        # index services by keyword
+        # index services + profiles for matching by uid (both types) and by
+        # keyword (services only, for backward-compatible service-only files)
+        by_uid = {}
         by_keyword = {}
         for svc in self.get_services():
+            by_uid[api.get_uid(svc)] = svc
             by_keyword[svc.getKeyword()] = svc
+        for profile in self.get_profiles():
+            by_uid[api.get_uid(profile)] = profile
+
+        def _cell(record, key):
+            value = record.get(key)
+            return value.strip() if value else u""
 
         updated = 0
         skipped = []
         for record in reader:
-            keyword = (record.get("keyword") or "").strip()
-            svc = by_keyword.get(keyword)
-            if svc is None:
-                if keyword:
-                    skipped.append(keyword)
+            uid = _cell(record, "uid")
+            keyword = _cell(record, "keyword")
+            obj = by_uid.get(uid) or by_keyword.get(keyword)
+            if obj is None:
+                label = uid or keyword
+                if label:
+                    skipped.append(label)
                 continue
-            if record.get("cash_price") not in (None, ""):
-                svc.setPrice(record["cash_price"].strip())
-            if record.get("insurance_price") not in (None, ""):
-                svc.setInsurancePrice(record["insurance_price"].strip())
-            if record.get("vat") not in (None, ""):
-                svc.setVAT(record["vat"].strip())
-            svc.reindexObject()
+            cash = _cell(record, "cash_price")
+            insurance = _cell(record, "insurance_price")
+            vat = _cell(record, "vat")
+            if api.get_portal_type(obj) == "AnalysisProfile":
+                if cash:
+                    obj.setAnalysisProfilePrice(cash)
+                    # make sure the profile's own price is actually applied
+                    obj.setUseAnalysisProfilePrice(True)
+                if vat:
+                    obj.setAnalysisProfileVAT(vat)
+            else:
+                if cash:
+                    obj.setPrice(cash)
+                if insurance:
+                    obj.setInsurancePrice(insurance)
+                if vat:
+                    obj.setVAT(vat)
+            obj.reindexObject()
             updated += 1
 
-        msg = "Updated {} service(s).".format(updated)
+        msg = "Updated {} item(s).".format(updated)
         if skipped:
-            msg += " Skipped unknown keywords: {}.".format(", ".join(skipped))
+            msg += " Skipped unknown rows: {}.".format(", ".join(skipped))
         return msg
